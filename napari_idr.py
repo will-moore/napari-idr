@@ -21,6 +21,11 @@ from vispy.color import Colormap
 
 from pluggy import HookimplMarker
 
+import logging
+# DEBUG logging for s3fs so we can track remote calls
+logging.basicConfig(level=logging.INFO)
+logging.getLogger('s3fs').setLevel(logging.DEBUG)
+
 # for optional type hints only, otherwise you can delete/ignore this stuff
 from typing import List, Optional, Union, Any, Tuple, Dict, Callable
 
