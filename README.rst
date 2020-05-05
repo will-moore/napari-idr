@@ -50,6 +50,11 @@ Usage
 -----
 
 Open images based on their ID in the Image Data Resource.
+
+NB: Only select images are available currently.
+
+For example ID = 9822151 or 6001240.
+
 E.g. to open Image at http://idr.openmicroscopy.org/webclient/?show=image-6001240
 
 ```
