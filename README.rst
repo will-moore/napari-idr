@@ -40,15 +40,24 @@ Requirements
 Installation
 ------------
 
-You can install "napari-idr" via `pip`_ from `PyPI`_::
+Install developer mode:
 
-    $ pip install napari-idr
+    cd napari-idr
+    pip install -e .
 
 
 Usage
 -----
 
-* TODO
+Open images based on their ID in the Image Data Resource.
+E.g. to open Image at http://idr.openmicroscopy.org/webclient/?show=image-6001240
+
+```
+import napari
+with napari.gui_qt():
+    viewer = napari.Viewer()
+    viewer.open('https://s3.embassy.ebi.ac.uk/idr/zarr/v0.1/6001240.zarr/')
+```
 
 Contributing
 ------------
