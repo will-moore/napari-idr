@@ -55,20 +55,21 @@ NB: Only select images are available currently.
 
 For example ID = 9822151 or 6001240.
 
-E.g. to open Image at http://idr.openmicroscopy.org/webclient/?show=image-6001240
+E.g. to open Image at http://idr.openmicroscopy.org/webclient/?show=image-6001240::
 
-```
-$ napari idr:6001240
-```
 
-```
-import napari
-with napari.gui_qt():
-    viewer = napari.Viewer()
-    viewer.open('idr:6001240')
-    # OR use the full URL
-    # viewer.open('https://s3.embassy.ebi.ac.uk/idr/zarr/v0.1/6001240.zarr/')
-```
+    $ napari idr:6001240
+
+
+OR in python::
+
+    import napari
+    with napari.gui_qt():
+        viewer = napari.Viewer()
+        viewer.open('idr:6001240')
+        # OR use the full URL
+        # viewer.open('https://s3.embassy.ebi.ac.uk/idr/zarr/v0.1/6001240.zarr/')
+
 
 Contributing
 ------------
