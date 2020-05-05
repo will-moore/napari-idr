@@ -38,18 +38,24 @@ napari_hook_implementation = HookimplMarker("napari")
 
 @napari_hook_implementation
 def napari_get_reader(path: PathLike) -> Optional[ReaderFunction]:
-    """A basic implementation of the napari_get_reader hook specification."""
-    print(' IDR reader ', path)
-    if (isinstance(path, str) and path.startswith('https://s3.embassy.ebi.ac.uk/idr/')
-            and re.search(r'^.*/(\d+)\.zarr.*', path) is not None):
-        return reader_function
+    """
+    Returns a reader for supported paths that include IDR ID
+
+    - URL of the form: https://s3.embassy.ebi.ac.uk/idr/zarr/v0.1/ID.zarr/
+    - Path that ends with the form 'idr:ID'
+    """
+    if isinstance(path, str):
+        if (path.startswith('https://s3.embassy.ebi.ac.uk/idr/')
+                and re.search(r'^.*/(\d+)\.zarr.*', path) is not None):
+            return reader_function
+        if re.search(r'idr:(\d+)$', path) is not None:
+            return reader_function
 
 
 def reader_function(path: PathLike) -> List[LayerData]:
     """Take a path or list of paths and return a list of LayerData tuples."""
-    print('path', path)
     # path is e.g. https://s3.embassy.ebi.ac.uk/idr/zarr/v0.1/6001240.zarr/
-    match = re.search(r'^.*/(\d+)\.zarr.*', path)
+    match = re.search(r'^.*/(\d+)\.zarr.*', path) or re.search(r'idr:(\d+)$', path)
     image_id = match.group(1)
     return [load_omero_image(image_id)]
 
@@ -60,7 +66,7 @@ def load_omero_image(image_id):
     print(image_data)
 
     # group '0' is for highest resolution pyramid
-    # see https://github.com/ome/omero-ms-zarr/pull/8/files#diff-958e7270f96f5407d7d980f500805b1b
+    # see https://github.com/ome/omero-ms-zarr/blob/master/spec.md
  
     s3 = s3fs.S3FileSystem(
         anon=True,
