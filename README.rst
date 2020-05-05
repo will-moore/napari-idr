@@ -40,7 +40,7 @@ Requirements
 Installation
 ------------
 
-Install developer mode:
+Install developer mode::
 
     cd napari-idr
     pip install -e .
