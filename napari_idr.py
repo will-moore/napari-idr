@@ -45,55 +45,37 @@ def napari_get_reader(path: PathLike) -> Optional[ReaderFunction]:
     - Path that ends with the form 'idr:ID'
     """
     if isinstance(path, str):
-        if (path.startswith('https://s3.embassy.ebi.ac.uk/idr/')
-                and re.search(r'^.*/(\d+)\.zarr.*', path) is not None):
-            return reader_function
-        if re.search(r'idr:(\d+)$', path) is not None:
+        if re.search(r'^.*/(\d+)\.zarr.*', path) is not None:
             return reader_function
 
 
 def reader_function(path: PathLike) -> List[LayerData]:
     """Take a path or list of paths and return a list of LayerData tuples."""
-    # path is e.g. https://s3.embassy.ebi.ac.uk/idr/zarr/v0.1/6001240.zarr/
-    match = re.search(r'^.*/(\d+)\.zarr.*', path) or re.search(r'idr:(\d+)$', path)
-    image_id = match.group(1)
-    return [load_omero_image(image_id)]
+    return [load_omero_zarr(path)]
 
 
-def load_omero_image(image_id):
-
-    image_data = requests.get('https://idr.openmicroscopy.org/webclient/imgData/%s/' % image_id).json()
+def load_omero_zarr(path):
+    zarr_path = path.endswith("/") and path or f"{path}/"
+    omero_path = zarr_path + "omero.json"
+    attrs_path = zarr_path + ".zattrs"
+    image_data = requests.get(omero_path).json()
+    root_attrs = requests.get(attrs_path).json()
     print(image_data)
 
-    # group '0' is for highest resolution pyramid
-    # see https://github.com/ome/omero-ms-zarr/blob/master/spec.md
- 
-    s3 = s3fs.S3FileSystem(
-        anon=True,
-        client_kwargs={
-            'endpoint_url': 'https://s3.embassy.ebi.ac.uk/'
-        },
-    )
-    # top-level
-    root_url = 'idr/zarr/v0.1/%s.zarr/' % image_id
-    store = s3fs.S3Map(root=root_url, s3=s3, check=False)
-    root = zarr.group(store=store)
-    root_attrs = root.attrs.asdict()
-    # {'multiscales': [{'datasets': [{'path': '0'}, {'path': '1'}], 'version': '0.1'}]}
-    print('root_attrs', root.attrs.asdict())
-
-    resolutions = ['0']
-    if 'multiscales' in root_attrs:
-        resolutions = [d['path'] for d in root_attrs['multiscales'][0]['datasets']]
-    print('resolutions', resolutions)
+    resolutions = ["0"]  # TODO: could be first alphanumeric dataset on err
+    try:
+        print('root_attrs', root_attrs)
+        if 'multiscales' in root_attrs:
+            datasets = root_attrs['multiscales'][0]['datasets']
+            resolutions = [d['path'] for d in datasets]
+        print('resolutions', resolutions)
+    except Exception as e:
+        raise e
 
     pyramid = []
     for resolution in resolutions:
-        root = 'idr/zarr/v0.1/%s.zarr/%s/' % (image_id, resolution)
-        store = s3fs.S3Map(root=root, s3=s3, check=False)
-        cached_store = zarr.LRUStoreCache(store, max_size=(2048 * 2**20))
         # data.shape is (t, c, z, y, x) by convention
-        data = da.from_zarr(cached_store)
+        data = da.from_zarr(f"{zarr_path}{resolution}")
         chunk_sizes = [str(c[0]) + (" (+ %s)" % c[-1] if c[-1] != c[0] else '') for c in data.chunks]
         print('resolution', resolution, 'shape (t, c, z, y, x)', data.shape, 'chunks', chunk_sizes, 'dtype', data.dtype)
         pyramid.append(data)
